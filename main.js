@@ -15,8 +15,29 @@ function convertAzToPixel(width, az) {
   }
 }
 
+//function convertAzaToPixel(width, az) {
+//  return (az * (width-1) / AZ_MAX) % width
+//}
+
+//function convertFToPixel(height, f) {
+//  return f* (height-1) / F_MAX;
+//}
+
+//function convertPToValue(p) {
+//  return p * VALUE_MAX / PMAX
+//}
+
 function convertFToPixel(height, f) {
   return height - 1 - f;
+}
+
+function createEcho() {
+  //  const propagationX widht * (echo.p * P_MAX_PERCENTAGE / P_MAX)
+  //  const propagationY height * (echo.p * P_MAX_PERCENTAGE / P_MAX)
+  //  for i = -propagationY /2 jusqu'a propagationY/2 avec ++
+  //  for j = -propagationX /2 jusqu'a propagationX/2 avec ++
+  //  Calcul value actuel
+  //  Set value dans la bonne case
 }
 
 function createEcho(value, table, width, index, typeOfEcho) {
@@ -102,6 +123,13 @@ function computeFRAZ(width, height, echos, typeOfEcho = 0) {
   return table;
 }
 
+function computeFRAZ(width, height, echos, typeOfEcho = 0) {
+  let table = new Uint8Array(width * height);
+  // echo . for
+  //  creaEcho(table, echo)
+  return table;
+}
+
 function printFRAZ(width, height, fraz) {
   const tableToPrint = [];
   for (let i = 0; i <= fraz.length; i++) {
@@ -122,20 +150,25 @@ function printFRAZ(width, height, fraz) {
 
 const width = 50;
 const height = 100;
+const VALUE_MAX = 255;
+const F_MAX = 200;
+const AZ_MAX = 360;
+const P_MAX = 100;
+const P_MAX_PERCENTAGE = 5;
 
 const fraz = computeFRAZ(
   width,
   height,
   [
-    { az: -50, f: 40 },
-    { az: -180, f: 40 },
-    { az: 180, f: 40 },
-    { az: -180, f: 0 },
-    { az: -50, f: 0 },
-    { az: 180, f: 0 },
-    { az: -180, f: 99 },
-    { az: -50, f: 99 },
-    { az: 180, f: 99 },
+    { az: -50, f: 40, p: 100 },
+    { az: -180, f: 40, p: 100 },
+    { az: 180, f: 40, p: 100 },
+    { az: -180, f: 0, p: 100 },
+    { az: -50, f: 0, p: 100 },
+    { az: 180, f: 0, p: 100 },
+    { az: -180, f: 99, p: 100 },
+    { az: -50, f: 99, p: 100 },
+    { az: 180, f: 99, p: 100 },
   ],
   2
 );
