@@ -1,24 +1,15 @@
-function convertAzToValue(az) {
-  return Math.round(((az * (width - 1)) / AZ_MAX) % width);
+function convertAzToColumn(az) {
+  return Math.round((az * (width - 1)) / AZ_MAX);
 }
 
-function convertFToValue(f) {
+function convertFToLine(f) {
   const invertF = F_MAX - f;
   return Math.round((invertF * (height - 1)) / F_MAX);
 }
 
 function convertPToValue(p) {
-  return (p * VALUE_MAX) / P_MAX;
+  return Math.round((p * VALUE_MAX) / P_MAX);
 }
-
-/*function createEcho() {
-  //  const propagationX widht * (echo.p * P_MAX_PERCENTAGE / P_MAX)
-  //  const propagationY height * (echo.p * P_MAX_PERCENTAGE / P_MAX)
-  //  for i = -propagationY /2 jusqu'a propagationY/2 avec ++
-  //  for j = -propagationX /2 jusqu'a propagationX/2 avec ++
-  //  Calcul value actuel
-  //  Set value dans la bonne case
-}*/
 
 /*function createEcho(value, table, width, index, typeOfEcho) {
   if (value === 255) {
@@ -83,13 +74,36 @@ function convertPToValue(p) {
 }*/
 
 function createEcho(table, echo) {
-  const index = convertFToValue(echo.f) * width + convertAzToValue(echo.az);
-  table[index] = convertPToValue(echo.p);
+  const line = convertFToLine(echo.f);
+  const column = convertAzToColumn(echo.az);
+  const index = line * width + column;
+  const pValue = convertPToValue(echo.p);
 
-  //  const propagationX widht * (echo.p * P_MAX_PERCENTAGE / P_MAX)
-  //  const propagationY height * (echo.p * P_MAX_PERCENTAGE / P_MAX)
-  //  for i = -propagationY /2 jusqu'a propagationY/2 avec ++
-  //  for j = -propagationX /2 jusqu'a propagationX/2 avec ++
+  const propagationY = (height * echo.p * P_MAX_PERCENTAGE) / (P_MAX * 100);
+  const propagationX = (width * echo.p * P_MAX_PERCENTAGE) / (P_MAX * 100);
+
+  for (
+    let i = -Math.round(propagationY / 2);
+    i <= Math.round(propagationY / 2);
+    i++
+  ) {
+    table[index + width * i] = pValue - Math.abs(i);
+  }
+
+  for (
+    let j = -Math.round(propagationX / 2);
+    j <= Math.round(propagationX / 2);
+    j++
+  ) {
+    if (index + j < width * line) {
+      table[index + j + width] = pValue - Math.abs(j);
+    } else if (index + j >= width * line + width) {
+      table[index + j - width] = pValue - Math.abs(j);
+    } else {
+      table[index + j] = pValue - Math.abs(j);
+    }
+  }
+
   //  Calcul value actuel
   //  Set value dans la bonne case
 }
@@ -106,10 +120,12 @@ function computeFRAZ(width, height, echos) {
 function printFRAZ(width, height, fraz) {
   const tableToPrint = [];
   for (let i = 0; i <= fraz.length; i++) {
-    if (fraz[i] === 255) {
+    if (fraz[i] > 0) {
       tableToPrint.push('*');
-    } else {
+    } else if (fraz[i] === 0) {
       tableToPrint.push(' ');
+    } else {
+      tableToPrint.push('0');
     }
   }
   let start = 0;
@@ -121,24 +137,14 @@ function printFRAZ(width, height, fraz) {
   }
 }
 
-const F_MAX = 200;
+const F_MAX = 300;
 const AZ_MAX = 360;
 const P_MAX = 100;
-const P_MAX_PERCENTAGE = 5;
+const P_MAX_PERCENTAGE = 80;
 const VALUE_MAX = 255;
 
 const width = 50;
-const height = 100;
+const height = 300;
 
-const fraz = computeFRAZ(width, height, [
-  { az: 0, f: 0, p: 100 },
-  { az: 360, f: 0, p: 100 },
-  { az: 180, f: 0, p: 100 },
-  { az: 0, f: 100, p: 100 },
-  { az: 360, f: 100, p: 100 },
-  { az: 180, f: 100, p: 100 },
-  { az: 0, f: 200, p: 100 },
-  { az: 360, f: 200, p: 100 },
-  { az: 180, f: 200, p: 100 },
-]);
+const fraz = computeFRAZ(width, height, [{ az: 180, f: 150, p: 100 }]);
 printFRAZ(width, height, fraz);
