@@ -1,46 +1,26 @@
-function convertAzToPixel(width, az) {
-  const valueMax = width - 1;
-  const halfWidth = Math.round(valueMax / 2);
-  const numberOfPixelPerDegree = valueMax / 360;
-  if (az === -180) {
-    return 0;
-  } else if (az === 180) {
-    return valueMax;
-  } else if (az === 0) {
-    return halfWidth;
-  } else if (az < 0) {
-    return Math.round(numberOfPixelPerDegree * (180 - Math.abs(az)));
-  } else {
-    return Math.round(numberOfPixelPerDegree * Math.abs(az) + halfWidth);
-  }
+function convertAzToValue(az) {
+  return Math.round(((az * (width - 1)) / AZ_MAX) % width);
 }
 
-//function convertAzaToPixel(width, az) {
-//  return (az * (width-1) / AZ_MAX) % width
-//}
-
-//function convertFToPixel(height, f) {
-//  return f* (height-1) / F_MAX;
-//}
-
-//function convertPToValue(p) {
-//  return p * VALUE_MAX / PMAX
-//}
-
-function convertFToPixel(height, f) {
-  return height - 1 - f;
+function convertFToValue(f) {
+  const invertF = F_MAX - f;
+  return Math.round((invertF * (height - 1)) / F_MAX);
 }
 
-function createEcho() {
+function convertPToValue(p) {
+  return (p * VALUE_MAX) / P_MAX;
+}
+
+/*function createEcho() {
   //  const propagationX widht * (echo.p * P_MAX_PERCENTAGE / P_MAX)
   //  const propagationY height * (echo.p * P_MAX_PERCENTAGE / P_MAX)
   //  for i = -propagationY /2 jusqu'a propagationY/2 avec ++
   //  for j = -propagationX /2 jusqu'a propagationX/2 avec ++
   //  Calcul value actuel
   //  Set value dans la bonne case
-}
+}*/
 
-function createEcho(value, table, width, index, typeOfEcho) {
+/*function createEcho(value, table, width, index, typeOfEcho) {
   if (value === 255) {
     table[index + width] = value;
     table[index - width] = value;
@@ -100,33 +80,26 @@ function createEcho(value, table, width, index, typeOfEcho) {
       }
     }
   }
+}*/
+
+function createEcho(table, echo) {
+  const index = convertFToValue(echo.f) * width + convertAzToValue(echo.az);
+  table[index] = convertPToValue(echo.p);
+
+  //  const propagationX widht * (echo.p * P_MAX_PERCENTAGE / P_MAX)
+  //  const propagationY height * (echo.p * P_MAX_PERCENTAGE / P_MAX)
+  //  for i = -propagationY /2 jusqu'a propagationY/2 avec ++
+  //  for j = -propagationX /2 jusqu'a propagationX/2 avec ++
+  //  Calcul value actuel
+  //  Set value dans la bonne case
 }
 
-function computeFRAZ(width, height, echos, typeOfEcho = 0) {
+function computeFRAZ(width, height, echos) {
   let table = new Uint8Array(width * height);
-  for (let i = 0; i <= height; i++) {
-    for (let j = 0; j < width; j++) {
-      let value = 0;
-      for (const [index, echo] of Object.entries(echos)) {
-        if (
-          i === convertFToPixel(height, echo.f) &&
-          j === convertAzToPixel(width, echo.az)
-        ) {
-          value = 255;
-          echos.splice(index, 1);
-          break;
-        }
-      }
-      createEcho(value, table, width, width * i + j, typeOfEcho);
-    }
+  let value = 0;
+  for (const echo of echos) {
+    createEcho(table, echo);
   }
-  return table;
-}
-
-function computeFRAZ(width, height, echos, typeOfEcho = 0) {
-  let table = new Uint8Array(width * height);
-  // echo . for
-  //  creaEcho(table, echo)
   return table;
 }
 
@@ -148,28 +121,24 @@ function printFRAZ(width, height, fraz) {
   }
 }
 
-const width = 50;
-const height = 100;
-const VALUE_MAX = 255;
 const F_MAX = 200;
 const AZ_MAX = 360;
 const P_MAX = 100;
 const P_MAX_PERCENTAGE = 5;
+const VALUE_MAX = 255;
 
-const fraz = computeFRAZ(
-  width,
-  height,
-  [
-    { az: -50, f: 40, p: 100 },
-    { az: -180, f: 40, p: 100 },
-    { az: 180, f: 40, p: 100 },
-    { az: -180, f: 0, p: 100 },
-    { az: -50, f: 0, p: 100 },
-    { az: 180, f: 0, p: 100 },
-    { az: -180, f: 99, p: 100 },
-    { az: -50, f: 99, p: 100 },
-    { az: 180, f: 99, p: 100 },
-  ],
-  2
-);
+const width = 50;
+const height = 100;
+
+const fraz = computeFRAZ(width, height, [
+  { az: 0, f: 0, p: 100 },
+  { az: 360, f: 0, p: 100 },
+  { az: 180, f: 0, p: 100 },
+  { az: 0, f: 100, p: 100 },
+  { az: 360, f: 100, p: 100 },
+  { az: 180, f: 100, p: 100 },
+  { az: 0, f: 200, p: 100 },
+  { az: 360, f: 200, p: 100 },
+  { az: 180, f: 200, p: 100 },
+]);
 printFRAZ(width, height, fraz);
