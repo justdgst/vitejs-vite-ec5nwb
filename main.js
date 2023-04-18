@@ -1,5 +1,3 @@
-import { generate_table } from './counter.js';
-
 function convertAzToColumn(az) {
   return Math.round((az * (width - 1)) / AZ_MAX);
 }
