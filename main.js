@@ -1,3 +1,5 @@
+import { generate_table } from './counter.js';
+
 function convertAzToColumn(az) {
   return Math.round((az * (width - 1)) / AZ_MAX);
 }
@@ -11,108 +13,61 @@ function convertPToValue(p) {
   return Math.round((p * VALUE_MAX) / P_MAX);
 }
 
-/*function createEcho(value, table, width, index, typeOfEcho) {
-  if (value === 255) {
-    table[index + width] = value;
-    table[index - width] = value;
-    table[index + width * 2] = value;
-    table[index - width * 2] = value;
-    table[index] = value;
-    if (index % width === 0) {
-      table[index + 1] = value;
-    } else if (index % width === width - 1) {
-      table[index - 1] = value;
-    } else {
-      table[index - 1] = value;
-      table[index + 1] = value;
-    }
-
-    if (typeOfEcho !== 0) {
-      table[index + width * 3] = value;
-      table[index - width * 3] = value;
-      if (index % width === 0) {
-        table[index + 2] = value;
-        table[index + width + 1] = value;
-        table[index - width + 1] = value;
-      } else if (index % width === width - 1) {
-        table[index - 2] = value;
-        table[index + width - 1] = value;
-        table[index - width - 1] = value;
-      } else {
-        table[index - 2] = value;
-        table[index + 2] = value;
-        table.fill(value, index + width - 1, index + width + 2);
-        table.fill(value, index - width - 1, index - width + 2);
-      }
-
-      if (typeOfEcho !== 1) {
-        table[index + width * 4] = value;
-        table[index - width * 4] = value;
-        if (index % width === 0) {
-          table[index + 3] = value;
-          table[index + width + 2] = value;
-          table[index - width + 2] = value;
-          table[index + width * 2 + 1] = value;
-          table[index - width * 2 + 1] = value;
-        } else if (index % width === width - 1) {
-          table[index - 3] = value;
-          table[index + width - 2] = value;
-          table[index - width - 2] = value;
-          table[index + width * 2 - 1] = value;
-          table[index - width * 2 - 1] = value;
-        } else {
-          table[index - 3] = value;
-          table[index + 3] = value;
-          table.fill(value, index + width - 2, index + width + 3);
-          table.fill(value, index - width - 2, index - width + 3);
-          table.fill(value, index + width * 2 - 1, index + width * 2 + 2);
-          table.fill(value, index - width * 2 - 1, index - width * 2 + 2);
-        }
-      }
-    }
-  }
-}*/
-
-function createEcho(table, echo) {
-  const line = convertFToLine(echo.f);
-  const column = convertAzToColumn(echo.az);
-  const index = line * width + column;
-  const pValue = convertPToValue(echo.p);
-
-  const propagationY = (height * echo.p * P_MAX_PERCENTAGE) / (P_MAX * 100);
-  const propagationX = (width * echo.p * P_MAX_PERCENTAGE) / (P_MAX * 100);
-
-  for (
-    let i = -Math.round(propagationY / 2);
-    i <= Math.round(propagationY / 2);
-    i++
-  ) {
-    table[index + width * i] = pValue - Math.abs(i);
-  }
-
-  for (
-    let j = -Math.round(propagationX / 2);
-    j <= Math.round(propagationX / 2);
-    j++
-  ) {
-    if (index + j < width * line) {
-      table[index + j + width] = pValue - Math.abs(j);
-    } else if (index + j >= width * line + width) {
-      table[index + j - width] = pValue - Math.abs(j);
-    } else {
-      table[index + j] = pValue - Math.abs(j);
-    }
-  }
-
-  //  Calcul value actuel
-  //  Set value dans la bonne case
-}
-
-function computeFRAZ(width, height, echos) {
+function fillFRAZTable(width, height, echos) {
   let table = new Uint8Array(width * height);
   let value = 0;
   for (const echo of echos) {
-    createEcho(table, echo);
+    const line = convertFToLine(echo.f);
+    const column = convertAzToColumn(echo.az);
+    const index = line * width + column;
+    const pValue = convertPToValue(echo.p);
+
+    const propagationY = (height * echo.p * P_MAX_PERCENTAGE) / (P_MAX * 100);
+    const propagationX = (width * echo.p * P_MAX_PERCENTAGE) / (P_MAX * 100);
+
+    const lineMax = -Math.round(propagationY / 2);
+    const lineMin = Math.round(propagationY / 2);
+    const columnMin = -Math.round(propagationX / 2);
+    const columnMax = Math.round(propagationX / 2);
+
+    for (let i = lineMax; i <= lineMin; i++) {
+      for (let j = columnMin; j <= columnMax; j++) {
+        // Fill the middle column
+        table[index + width * i] = pValue - Math.abs(j);
+        // Fill the middle line (manage the border)
+        if (index + j < width * line) {
+          table[index + j + width] = pValue - Math.abs(j);
+        } else if (index + j >= width * line + width) {
+          table[index + j - width] = pValue - Math.abs(j);
+        } else {
+          table[index + j] = pValue - Math.abs(j);
+        }
+
+        // Fill to get an echo shape (manage the border)
+        if (
+          (i < Math.round(propagationY / 2) &&
+            i > -Math.round(propagationY / 2) &&
+            j > -Math.round(propagationX / 6) &&
+            j < Math.round(propagationX / 6)) ||
+          (i < Math.round(propagationY / 4) &&
+            i > -Math.round(propagationY / 4) &&
+            j > -Math.round(propagationX / 4) &&
+            j < Math.round(propagationX / 4)) ||
+          (i < Math.round(propagationY / 6) &&
+            i > -Math.round(propagationY / 6) &&
+            j > -Math.round(propagationX / 2) &&
+            j < Math.round(propagationX / 2))
+        ) {
+          if (index + j < width * line) {
+            table[index + j + width * i + width] = pValue - Math.abs(j);
+          } else if (index + j >= width * line + width) {
+            table[index + j + width * i - width] = pValue - Math.abs(j);
+          } else {
+            table[index + j + width * i] = pValue - Math.abs(j);
+          }
+        }
+      }
+    }
   }
   return table;
 }
@@ -140,11 +95,14 @@ function printFRAZ(width, height, fraz) {
 const F_MAX = 300;
 const AZ_MAX = 360;
 const P_MAX = 100;
-const P_MAX_PERCENTAGE = 80;
+const P_MAX_PERCENTAGE = 10;
 const VALUE_MAX = 255;
 
-const width = 50;
+const width = 100;
 const height = 300;
 
-const fraz = computeFRAZ(width, height, [{ az: 180, f: 150, p: 100 }]);
+const fraz = fillFRAZTable(width, height, [
+  { az: 180, f: 150, p: 100 },
+  //{ az: 190, f: 150, p: 100 },
+]);
 printFRAZ(width, height, fraz);
