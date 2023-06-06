@@ -3,8 +3,9 @@ function convertAzToColumn(az) {
 }
 
 function convertFToLine(f) {
+  const deltaF = F_MAX - F_MIN;
   const invertF = F_MAX - f;
-  return Math.round((invertF * (height - 1)) / F_MAX);
+  return Math.round((invertF * (height - 1)) / deltaF);
 }
 
 function convertPToValue(p) {
@@ -87,13 +88,14 @@ function printFRAZ(width, height, fraz) {
   let start = 0;
   let end = width;
   for (let i = 0; i < height; i++) {
-    console.log(tableToPrint.slice(start, end).join(' '));
+    console.log(fraz.slice(start, end).join(' '));
     start = end;
     end = end + width;
   }
 }
 
-const F_MAX = 300;
+const F_MAX = 10000;
+const F_MIN = 100;
 const AZ_MAX = 360;
 const P_MAX = 300;
 const P_MAX_PERCENTAGE = 10;
@@ -102,5 +104,5 @@ const VALUE_MAX = 255;
 const width = 200;
 const height = 300;
 
-const fraz = fillFRAZTable(width, height, [{ az: 180, f: 100, p: 300 }]);
+const fraz = fillFRAZTable(width, height, [{ az: 180, f: 300, p: 180 }]);
 printFRAZ(width, height, fraz);
